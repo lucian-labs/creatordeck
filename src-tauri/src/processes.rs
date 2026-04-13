@@ -3,18 +3,16 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ProcessInfo {
-    #[serde(rename = "Id")]
     pub id: u32,
-    #[serde(rename = "ProcessName")]
-    pub process_name: String,
-    #[serde(rename = "MainWindowTitle")]
-    pub main_window_title: Option<String>,
+    pub name: String,
+    pub title: Option<String>,
+    pub media_types: Vec<String>,
 }
 
 #[tauri::command]
 pub fn get_media_processes() -> Result<Vec<ProcessInfo>, String> {
     let json = run_ps(
-        r#"Get-Process -EA SilentlyContinue | Where-Object { $_.Modules -ne $null } | ForEach-Object { $p = $_; try { if ($p.Modules.ModuleName -match 'mfplat|ksproxy|vidcap|mfreadwrite|mmdevapi|avicap') { $p | Select Id, ProcessName, @{N='MainWindowTitle';E={$_.MainWindowTitle}} } } catch {} } | Sort-Object ProcessName -Unique | ConvertTo-Json -Compress"#
+        r#"Get-Process -EA SilentlyContinue | Where-Object { $_.Modules -ne $null } | ForEach-Object { $p = $_; try { $mods = @($p.Modules.ModuleName); $types = @(); if ($mods -match 'avicap|vidcap|qcap') { $types += 'Camera' }; if ($mods -match 'ksproxy') { $types += 'Camera/Audio' }; if ($mods -match 'mmdevapi') { $types += 'Audio' }; if ($mods -match 'mfreadwrite') { $types += 'Media Read/Write' }; if ($mods -match 'mfplat' -and $types.Count -eq 0) { $types += 'Media Framework' }; if ($types.Count -gt 0) { [PSCustomObject]@{ id = $p.Id; name = $p.ProcessName; title = $p.MainWindowTitle; media_types = $types } } } catch {} } | Sort-Object name -Unique | ConvertTo-Json -Depth 3 -Compress"#
     )?;
     if json.is_empty() || json == "null" {
         return Ok(vec![]);

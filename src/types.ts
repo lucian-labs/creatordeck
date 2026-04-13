@@ -15,9 +15,10 @@ export interface GhostStats {
 }
 
 export interface ProcessInfo {
-  Id: number;
-  ProcessName: string;
-  MainWindowTitle: string | null;
+  id: number;
+  name: string;
+  title: string | null;
+  media_types: string[];
 }
 
 export type DeviceCategory = "camera" | "audio" | "usb";
