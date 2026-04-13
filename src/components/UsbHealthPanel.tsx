@@ -29,7 +29,7 @@ function UsbDeviceRow({ device, onReset }: { device: DeviceInfo; onReset: () => 
       await invoke("reset_device", { instanceId: device.InstanceId });
       onReset();
     } catch {
-      // UAC cancelled or failed
+      // ignore
     } finally {
       setResetting(false);
     }
@@ -40,18 +40,14 @@ function UsbDeviceRow({ device, onReset }: { device: DeviceInfo; onReset: () => 
       const raw = await invoke<string>("get_device_detail", {
         instanceId: device.InstanceId,
       });
-      setDetail(raw);
+      setDetail(detail ? null : raw);
     } catch {
       setDetail("Could not fetch details");
     }
   }
 
   return (
-    <div
-      className={`rounded-lg px-3 py-2 text-xs ${
-        isBad ? "bg-red-950/30 border border-red-900/30" : "bg-zinc-900/50"
-      }`}
-    >
+    <div className={`border-b border-border/30 px-4 py-2.5 text-xs ${isBad ? "bg-red-950/10" : ""}`}>
       <div className="flex items-center justify-between gap-2">
         <span className="truncate flex-1">{device.FriendlyName || "Unknown"}</span>
         <div className="flex items-center gap-1.5 shrink-0">
@@ -60,7 +56,7 @@ function UsbDeviceRow({ device, onReset }: { device: DeviceInfo; onReset: () => 
             <>
               <button
                 onClick={showDetail}
-                className="p-1 rounded text-zinc-500 hover:text-white hover:bg-surface-hover transition-colors"
+                className="p-1 text-zinc-500 hover:text-white transition-colors"
                 title="Device details"
               >
                 <Info className="w-3 h-3" />
@@ -68,7 +64,7 @@ function UsbDeviceRow({ device, onReset }: { device: DeviceInfo; onReset: () => 
               <button
                 onClick={handleReset}
                 disabled={resetting}
-                className="p-1 rounded text-amber-500 hover:text-amber-300 hover:bg-amber-950/30 transition-colors"
+                className="p-1 text-warning hover:text-amber-300 transition-colors"
                 title="Reset this device (UAC)"
               >
                 {resetting ? (
@@ -82,7 +78,7 @@ function UsbDeviceRow({ device, onReset }: { device: DeviceInfo; onReset: () => 
         </div>
       </div>
       {detail && (
-        <pre className="mt-1.5 text-[10px] text-muted bg-black/30 rounded p-2 overflow-x-auto whitespace-pre-wrap">
+        <pre className="mt-2 text-[10px] text-muted bg-black/20 p-3 overflow-x-auto whitespace-pre-wrap">
           {detail}
         </pre>
       )}
@@ -95,26 +91,26 @@ export function UsbHealthPanel({ usbDevices, ghostStats }: UsbHealthPanelProps) 
   const erroredCount = usbDevices.filter((d) => d.Status !== "OK").length;
 
   return (
-    <div className="rounded-xl border border-border bg-surface-raised p-4 space-y-4">
+    <div className="space-y-5">
       <div className="flex items-center gap-2">
         <Usb className="w-4 h-4 text-muted" />
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">
           USB Health
         </h2>
       </div>
 
       {/* Controllers */}
-      <div className="space-y-2">
-        <p className="text-xs text-muted flex items-center gap-1.5">
+      <div className="space-y-1">
+        <p className="text-[11px] text-muted/60 flex items-center gap-1.5 px-4">
           <HardDrive className="w-3 h-3" />
           Controllers & Hubs
           {erroredCount > 0 && (
-            <span className="text-red-400 font-medium">
+            <span className="text-error font-medium">
               ({erroredCount} failing)
             </span>
           )}
         </p>
-        <div className="space-y-1.5 max-h-48 overflow-y-auto">
+        <div>
           {usbDevices.map((d) => (
             <UsbDeviceRow
               key={d.InstanceId}
@@ -123,51 +119,47 @@ export function UsbHealthPanel({ usbDevices, ghostStats }: UsbHealthPanelProps) 
             />
           ))}
           {usbDevices.length === 0 && (
-            <p className="text-xs text-muted italic">No USB controllers detected</p>
+            <p className="text-xs text-muted italic px-4 py-2">No USB controllers detected</p>
           )}
         </div>
       </div>
 
       {/* Ghost Stats */}
       {ghostStats && (
-        <div className="space-y-2">
-          <p className="text-xs text-muted flex items-center gap-1.5">
+        <div className="space-y-3 px-4">
+          <p className="text-[11px] text-muted/60 flex items-center gap-1.5">
             <Ghost className="w-3 h-3" />
             Ghost Devices
           </p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-4 gap-px bg-border/30">
             {[
-              { label: "Cameras", value: ghostStats.camera, warn: ghostStats.camera > 0 },
+              { label: "Cam", value: ghostStats.camera, warn: ghostStats.camera > 0 },
               { label: "Audio", value: ghostStats.audio, warn: ghostStats.audio > 10 },
               { label: "USB", value: ghostStats.usb, warn: ghostStats.usb > 20 },
               { label: "Total", value: ghostStats.total, warn: ghostStats.total > 100 },
             ].map(({ label, value, warn }) => (
-              <div
-                key={label}
-                className={`rounded-lg px-3 py-2 text-center ${
-                  warn ? "bg-amber-950/30 border border-amber-900/30" : "bg-zinc-900/50"
-                }`}
-              >
-                <p className={`text-lg font-bold ${warn ? "text-warning" : "text-zinc-300"}`}>
+              <div key={label} className="bg-surface-raised px-3 py-2.5 text-center">
+                <p className={`text-base font-bold ${warn ? "text-warning" : "text-zinc-400"}`}>
                   {value}
                 </p>
-                <p className="text-[10px] text-muted uppercase tracking-wider">{label}</p>
+                <p className="text-[10px] text-muted/50 uppercase tracking-wider">{label}</p>
               </div>
             ))}
           </div>
           {ghostStats.total > 50 && (
-            <div className="flex items-start gap-2 rounded-lg bg-amber-950/20 border border-amber-900/20 px-3 py-2">
+            <div className="flex items-start gap-2.5 px-1 py-2">
               <AlertTriangle className="w-3.5 h-3.5 text-warning mt-0.5 shrink-0" />
-              <p className="text-xs text-amber-300/80">
-                {ghostStats.total} ghost devices. Inspect them below before cleaning.
+              <p className="text-[11px] text-muted/70">
+                {ghostStats.total} ghost devices. Inspect before cleaning.
               </p>
             </div>
           )}
         </div>
       )}
 
-      {/* Ghost Device Viewer */}
-      <GhostViewer />
+      <div className="px-4">
+        <GhostViewer />
+      </div>
     </div>
   );
 }

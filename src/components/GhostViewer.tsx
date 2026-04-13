@@ -33,7 +33,7 @@ export function GhostViewer() {
       <button
         onClick={loadGhosts}
         disabled={loading}
-        className="w-full flex items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-700 py-3 text-xs text-muted hover:text-white hover:border-zinc-500 transition-colors"
+        className="w-full flex items-center justify-center gap-2 border border-dashed border-border py-3 text-xs text-muted/60 hover:text-muted hover:border-zinc-500 transition-colors"
       >
         {loading ? (
           <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -45,7 +45,6 @@ export function GhostViewer() {
     );
   }
 
-  // Group by class
   const grouped: Record<string, GhostDevice[]> = {};
   for (const g of ghosts) {
     const cls = g.class || "Other";
@@ -57,33 +56,35 @@ export function GhostViewer() {
   const filtered = filter ? { [filter]: grouped[filter] || [] } : grouped;
 
   return (
-    <div className="rounded-xl border border-border bg-surface-raised p-4 space-y-3">
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Ghost className="w-4 h-4 text-muted" />
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
-            Ghost Devices
-          </h2>
+          <Ghost className="w-3.5 h-3.5 text-muted/60" />
+          <span className="text-[11px] text-muted/60">{ghosts.length} ghost devices</span>
         </div>
-        <span className="text-xs text-muted">{ghosts.length} total</span>
+        <button
+          onClick={() => setGhosts(null)}
+          className="text-[10px] text-muted/40 hover:text-muted transition-colors"
+        >
+          close
+        </button>
       </div>
 
-      {/* Class filter chips */}
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap gap-1">
         <button
           onClick={() => setFilter(null)}
-          className={`px-2 py-0.5 rounded text-[10px] transition-colors ${
-            filter === null ? "bg-accent text-white" : "bg-zinc-800 text-muted hover:text-white"
+          className={`px-2 py-0.5 text-[10px] transition-colors ${
+            filter === null ? "bg-accent/20 text-accent" : "text-muted/40 hover:text-muted"
           }`}
         >
-          All ({ghosts.length})
+          All
         </button>
         {classes.map((cls) => (
           <button
             key={cls}
             onClick={() => setFilter(filter === cls ? null : cls)}
-            className={`px-2 py-0.5 rounded text-[10px] transition-colors ${
-              filter === cls ? "bg-accent text-white" : "bg-zinc-800 text-muted hover:text-white"
+            className={`px-2 py-0.5 text-[10px] transition-colors ${
+              filter === cls ? "bg-accent/20 text-accent" : "text-muted/40 hover:text-muted"
             }`}
           >
             {cls} ({grouped[cls].length})
@@ -91,13 +92,12 @@ export function GhostViewer() {
         ))}
       </div>
 
-      {/* Device list */}
-      <div className="space-y-1 max-h-64 overflow-y-auto">
+      <div className="max-h-48 overflow-y-auto">
         {Object.entries(filtered).map(([cls, devices]) => (
           <div key={cls}>
             {!filter && (
-              <p className="text-[10px] text-zinc-600 uppercase tracking-wider mt-2 mb-1 first:mt-0">
-                {cls} ({devices.length})
+              <p className="text-[10px] text-muted/30 uppercase tracking-wider mt-3 mb-1 px-4 first:mt-0">
+                {cls}
               </p>
             )}
             {devices.map((d) => {
@@ -105,23 +105,16 @@ export function GhostViewer() {
               return (
                 <div
                   key={d.instance_id}
-                  className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 bg-zinc-900/50 hover:bg-surface-hover transition-colors"
+                  className="flex items-center gap-2 px-4 py-1.5 border-b border-border/20 hover:bg-surface-hover transition-colors"
                 >
                   <Icon className="w-3 h-3 text-zinc-600 shrink-0" />
-                  <span className="text-xs truncate">{d.name}</span>
+                  <span className="text-[11px] truncate">{d.name}</span>
                 </div>
               );
             })}
           </div>
         ))}
       </div>
-
-      <button
-        onClick={() => setGhosts(null)}
-        className="text-[10px] text-muted hover:text-white transition-colors"
-      >
-        Close viewer
-      </button>
     </div>
   );
 }

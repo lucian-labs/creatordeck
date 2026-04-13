@@ -15,12 +15,12 @@ function SectionHeader({ icon: Icon, title, count, okCount }: {
   okCount: number;
 }) {
   return (
-    <div className="flex items-center gap-2 mb-3">
+    <div className="flex items-center gap-2 px-4 pb-2">
       <Icon className="w-4 h-4 text-muted" />
-      <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
+      <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">
         {title}
       </h2>
-      <span className="text-xs text-muted">
+      <span className="text-xs text-muted/60">
         {okCount}/{count} active
       </span>
     </div>
@@ -30,8 +30,8 @@ function SectionHeader({ icon: Icon, title, count, okCount }: {
 export function Dashboard({ cameras, audioEndpoints, loading }: DashboardProps) {
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64 text-muted">
-        <div className="animate-pulse">Scanning devices...</div>
+      <div className="flex items-center justify-center h-32 text-muted">
+        <div className="animate-pulse text-sm">Scanning devices...</div>
       </div>
     );
   }
@@ -44,9 +44,9 @@ export function Dashboard({ cameras, audioEndpoints, loading }: DashboardProps) 
       <div>
         <SectionHeader icon={Camera} title="Cameras" count={cameras.length} okCount={cameraOk} />
         {cameras.length === 0 ? (
-          <p className="text-sm text-muted italic">No camera devices found</p>
+          <p className="text-sm text-muted italic px-4">No camera devices found</p>
         ) : (
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-3.5">
+          <div>
             {cameras
               .sort((a, b) => (a.Present === b.Present ? 0 : a.Present ? -1 : 1))
               .map((d) => (
@@ -59,9 +59,9 @@ export function Dashboard({ cameras, audioEndpoints, loading }: DashboardProps) 
       <div>
         <SectionHeader icon={Mic} title="Audio Endpoints" count={audioEndpoints.length} okCount={audioOk} />
         {audioEndpoints.length === 0 ? (
-          <p className="text-sm text-muted italic">No audio endpoints found</p>
+          <p className="text-sm text-muted italic px-4">No audio endpoints found</p>
         ) : (
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-3.5">
+          <div>
             {audioEndpoints
               .sort((a, b) => (a.Present === b.Present ? 0 : a.Present ? -1 : 1))
               .map((d) => (

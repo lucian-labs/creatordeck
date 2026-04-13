@@ -21,34 +21,26 @@ export function DeviceCard({ device, category }: DeviceCardProps) {
 
   return (
     <div
-      className={`relative rounded-xl border p-4 transition-all ${
+      className={`border-b border-border/50 px-4 py-3.5 transition-all ${
         isGhost
-          ? "border-zinc-800 bg-zinc-900/40 opacity-50"
+          ? "opacity-40"
           : isBad
-            ? "border-red-800/40 bg-red-950/20"
-            : "border-border bg-surface-raised hover:bg-surface-hover hover:border-zinc-600/50"
+            ? "bg-red-950/10"
+            : "hover:bg-surface-hover"
       }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3 min-w-0">
-          <div
-            className={`mt-0.5 rounded-lg p-2 ${
-              isGhost
-                ? "bg-zinc-800"
-                : isBad
-                  ? "bg-red-950/50"
-                  : "bg-accent/10"
-            }`}
-          >
+          <div className="mt-0.5 p-1.5">
             {isGhost ? (
-              <Ghost className="w-4 h-4 text-zinc-500" />
+              <Ghost className="w-4 h-4 text-zinc-600" />
             ) : (
-              <Icon className={`w-4 h-4 ${isBad ? "text-red-400" : "text-accent"}`} />
+              <Icon className={`w-4 h-4 ${isBad ? "text-error" : "text-accent"}`} />
             )}
           </div>
           <div className="min-w-0">
             <p className="text-sm font-medium truncate">{name}</p>
-            <p className="text-xs text-muted truncate mt-0.5">
+            <p className="text-xs text-muted/60 truncate mt-0.5">
               {device.InstanceId.split("\\").slice(0, 2).join("\\")}
             </p>
           </div>

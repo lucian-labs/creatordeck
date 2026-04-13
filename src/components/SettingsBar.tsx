@@ -26,20 +26,20 @@ export function SettingsBar() {
   }
 
   return (
-    <div className="flex items-center gap-3 px-6 py-2 border-t border-border/50">
+    <div className="flex items-center gap-3 px-6 py-2.5 border-t border-border/50">
       <button
         onClick={toggleAutostart}
-        className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition-colors ${
+        className={`flex items-center gap-1.5 px-2.5 py-1 text-[11px] transition-colors ${
           autostart
-            ? "bg-accent/20 text-accent"
-            : "bg-zinc-800 text-muted hover:text-white"
+            ? "bg-accent/15 text-accent"
+            : "text-muted/50 hover:text-muted"
         }`}
       >
         <Power className="w-3 h-3" />
         {autostart ? "Autostart: On" : "Autostart: Off"}
       </button>
-      <span className="text-[10px] text-zinc-600">
-        {autostart ? "Starts with Windows and lives in your tray" : "Enable to start CreatorDeck at login"}
+      <span className="text-[10px] text-muted/30">
+        {autostart ? "Starts with Windows" : ""}
       </span>
     </div>
   );

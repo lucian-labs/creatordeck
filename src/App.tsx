@@ -23,19 +23,21 @@ function App() {
     <div className="min-h-screen flex flex-col bg-surface text-zinc-100">
       <Header lastRefresh={lastRefresh} loading={loading} onRefresh={refresh} />
 
-      <main className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-5 p-5 overflow-auto">
-        <section className="lg:col-span-2 space-y-4">
+      <main className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-px bg-border overflow-auto">
+        {/* Left: What is using what */}
+        <section className="lg:col-span-2 bg-surface p-6 space-y-6">
+          <ProcessList processes={mediaProcesses} />
+          <Timeline />
+        </section>
+
+        {/* Right: Devices & health */}
+        <aside className="bg-surface p-6 space-y-6">
           <Dashboard
             cameras={cameras}
             audioEndpoints={audioEndpoints}
             loading={loading}
           />
-        </section>
-
-        <aside className="space-y-4">
           <UsbHealthPanel usbDevices={usbDevices} ghostStats={ghostStats} />
-          <Timeline />
-          <ProcessList processes={mediaProcesses} />
         </aside>
       </main>
 

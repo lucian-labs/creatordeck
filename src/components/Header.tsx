@@ -12,24 +12,22 @@ export function Header({ lastRefresh, loading, onRefresh }: HeaderProps) {
     : "--:--:--";
 
   return (
-    <header className="flex items-center justify-between border-b border-border px-6 py-5">
+    <header className="flex items-center justify-between border-b border-border px-6 py-4">
       <div className="flex items-center gap-3">
-        <div className="rounded-lg bg-accent/10 p-2">
-          <Monitor className="w-5 h-5 text-accent" />
-        </div>
+        <Monitor className="w-5 h-5 text-accent" />
         <div>
-          <h1 className="text-lg font-bold tracking-tight">CreatorDeck</h1>
-          <p className="text-xs text-muted">Device health dashboard</p>
+          <h1 className="text-base font-bold tracking-tight">CreatorDeck</h1>
+          <p className="text-[11px] text-muted/60">Device health dashboard</p>
         </div>
       </div>
-      <div className="flex items-center gap-3">
-        <span className="text-xs text-muted">
-          Last scan: {timeStr}
+      <div className="flex items-center gap-4">
+        <span className="text-[11px] text-muted/50">
+          {timeStr}
         </span>
         <button
           onClick={onRefresh}
           disabled={loading}
-          className="rounded-lg p-2 text-muted hover:text-white hover:bg-surface-hover transition-colors"
+          className="p-2 text-muted hover:text-white transition-colors"
           title="Refresh now"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />

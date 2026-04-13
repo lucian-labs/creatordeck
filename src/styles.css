@@ -4,13 +4,20 @@
   --color-surface: #131316;
   --color-surface-raised: #1c1c21;
   --color-surface-hover: #2a2a30;
-  --color-border: #3a3a42;
+  --color-border: #27272c;
   --color-ok: #34d399;
   --color-error: #f87171;
   --color-warning: #fbbf24;
   --color-accent: #a78bfa;
   --color-accent-hover: #8b5cf6;
   --color-muted: #b4b4bd;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+  --radius-full: 0px;
 }
 
 * {
@@ -34,7 +41,6 @@ body {
 }
 ::-webkit-scrollbar-thumb {
   background: var(--color-border);
-  border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #52525b;

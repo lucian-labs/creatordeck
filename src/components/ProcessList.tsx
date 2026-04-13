@@ -23,15 +23,14 @@ const knownApps: Record<string, string> = {
 };
 
 const typeConfig: Record<string, { icon: React.ElementType; color: string }> = {
-  Camera: { icon: Camera, color: "bg-red-900/40 text-red-300" },
-  "Camera/Audio": { icon: Camera, color: "bg-orange-900/40 text-orange-300" },
-  Audio: { icon: Mic, color: "bg-blue-900/40 text-blue-300" },
-  "Media Read/Write": { icon: Film, color: "bg-purple-900/40 text-purple-300" },
-  "Media Framework": { icon: Clapperboard, color: "bg-zinc-800 text-zinc-400" },
+  Camera: { icon: Camera, color: "bg-red-900/30 text-red-300 border border-red-800/20" },
+  "Camera/Audio": { icon: Camera, color: "bg-orange-900/30 text-orange-300 border border-orange-800/20" },
+  Audio: { icon: Mic, color: "bg-blue-900/30 text-blue-300 border border-blue-800/20" },
+  "Media Read/Write": { icon: Film, color: "bg-purple-900/30 text-purple-300 border border-purple-800/20" },
+  "Media Framework": { icon: Clapperboard, color: "bg-zinc-800/50 text-zinc-400 border border-zinc-700/20" },
 };
 
 export function ProcessList({ processes }: ProcessListProps) {
-  // Sort: camera/audio first, media framework last
   const sorted = [...processes].sort((a, b) => {
     const aHasCam = a.media_types.some((t) => t.includes("Camera"));
     const bHasCam = b.media_types.some((t) => t.includes("Camera"));
@@ -43,46 +42,46 @@ export function ProcessList({ processes }: ProcessListProps) {
   });
 
   return (
-    <div className="rounded-xl border border-border bg-surface-raised p-4 space-y-3">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Activity className="w-4 h-4 text-muted" />
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
-            Media Processes
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">
+            What's Using What
           </h2>
         </div>
-        <span className="text-xs text-muted">{processes.length} active</span>
+        <span className="text-xs text-muted/60">{processes.length} processes</span>
       </div>
 
-      <div className="space-y-1.5 max-h-72 overflow-y-auto">
+      <div className="space-y-px">
         {sorted.map((p) => {
           const friendly = knownApps[p.name] || p.name;
           return (
             <div
               key={`${p.id}-${p.name}`}
-              className="rounded-lg px-3 py-2 bg-zinc-900/50 hover:bg-surface-hover transition-colors"
+              className="border-b border-border/30 px-4 py-3.5 hover:bg-surface-hover transition-colors"
             >
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-xs font-medium truncate">{friendly}</p>
+                  <p className="text-sm font-medium truncate">{friendly}</p>
                   {p.title && (
-                    <p className="text-[10px] text-muted truncate">{p.title}</p>
+                    <p className="text-xs text-muted/60 truncate mt-0.5">{p.title}</p>
                   )}
                 </div>
-                <span className="text-[10px] text-muted font-mono shrink-0">
+                <span className="text-[10px] text-muted/50 font-mono shrink-0">
                   {p.id}
                 </span>
               </div>
-              <div className="flex flex-wrap gap-1 mt-1.5">
+              <div className="flex flex-wrap gap-1.5 mt-2.5">
                 {p.media_types.map((type_) => {
                   const cfg = typeConfig[type_] || typeConfig["Media Framework"];
                   const Icon = cfg.icon;
                   return (
                     <span
                       key={type_}
-                      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${cfg.color}`}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium ${cfg.color}`}
                     >
-                      <Icon className="w-2.5 h-2.5" />
+                      <Icon className="w-3 h-3" />
                       {type_}
                     </span>
                   );
@@ -92,7 +91,7 @@ export function ProcessList({ processes }: ProcessListProps) {
           );
         })}
         {processes.length === 0 && (
-          <p className="text-xs text-muted italic py-2">No media processes detected</p>
+          <p className="text-sm text-muted italic py-6 px-4">No media processes detected</p>
         )}
       </div>
     </div>

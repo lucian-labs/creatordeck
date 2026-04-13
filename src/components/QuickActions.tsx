@@ -21,7 +21,7 @@ export function QuickActions({ ghostStats, onActionComplete }: QuickActionsProps
       await invoke(action);
       setResult({ action: label, success: true });
       setTimeout(() => onActionComplete(), 1000);
-    } catch (e) {
+    } catch {
       setResult({ action: label, success: false });
     } finally {
       setRunning(null);
@@ -32,66 +32,60 @@ export function QuickActions({ ghostStats, onActionComplete }: QuickActionsProps
   const actions = [
     {
       key: "fix_cameras" as ActionKey,
-      label: "Fix My Cameras",
+      label: "Fix Cameras",
       icon: Camera,
-      description: "Reset camera devices & restart Frame Server",
-      color: "bg-accent hover:bg-accent-hover",
+      color: "bg-accent/20 text-accent hover:bg-accent/30",
     },
     {
       key: "reset_usb" as ActionKey,
       label: "Reset USB",
       icon: Usb,
-      description: "Restart USB controllers & root hubs",
-      color: "bg-blue-600 hover:bg-blue-700",
+      color: "bg-blue-500/15 text-blue-400 hover:bg-blue-500/25",
     },
     {
       key: "clean_ghosts" as ActionKey,
       label: `Clean Ghosts${ghostStats ? ` (${ghostStats.total})` : ""}`,
       icon: Trash2,
-      description: "Remove stale device entries",
-      color: "bg-amber-600 hover:bg-amber-700",
+      color: "bg-warning/15 text-warning hover:bg-warning/25",
     },
   ];
 
   return (
-    <div className="border-t border-border bg-surface-raised/80 backdrop-blur px-6 py-4">
-      <div className="flex items-center gap-2 mb-3">
-        <Shield className="w-3.5 h-3.5 text-muted" />
-        <p className="text-xs text-muted">
-          Quick actions require admin privileges (UAC prompt)
-        </p>
+    <div className="border-t border-border px-6 py-3.5">
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-1.5 text-muted/40 shrink-0">
+          <Shield className="w-3 h-3" />
+          <span className="text-[10px]">UAC</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {actions.map(({ key, label, icon: Icon, color }) => (
+            <button
+              key={key}
+              onClick={() => runAction(key, label)}
+              disabled={running !== null}
+              className={`flex items-center gap-2 px-3.5 py-2 text-xs font-medium transition-all ${
+                running === key
+                  ? "bg-zinc-800 text-muted cursor-wait"
+                  : running !== null
+                    ? "opacity-30 cursor-not-allowed bg-transparent text-muted"
+                    : color
+              }`}
+            >
+              {running === key ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Icon className="w-3.5 h-3.5" />
+              )}
+              {label}
+            </button>
+          ))}
+        </div>
+        {result && (
+          <span className={`text-[11px] ${result.success ? "text-ok" : "text-error"}`}>
+            {result.success ? `${result.action} done` : `${result.action} failed`}
+          </span>
+        )}
       </div>
-      <div className="flex flex-wrap gap-3">
-        {actions.map(({ key, label, icon: Icon, description, color }) => (
-          <button
-            key={key}
-            onClick={() => runAction(key, label)}
-            disabled={running !== null}
-            className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-all ${
-              running === key
-                ? "bg-zinc-700 cursor-wait"
-                : running !== null
-                  ? "bg-zinc-800 opacity-50 cursor-not-allowed"
-                  : color
-            }`}
-            title={description}
-          >
-            {running === key ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Icon className="w-4 h-4" />
-            )}
-            {label}
-          </button>
-        ))}
-      </div>
-      {result && (
-        <p className={`mt-2 text-xs ${result.success ? "text-ok" : "text-error"}`}>
-          {result.success
-            ? `${result.action} completed. Refreshing...`
-            : `${result.action} failed or was cancelled.`}
-        </p>
-      )}
     </div>
   );
 }

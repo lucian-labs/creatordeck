@@ -6,23 +6,23 @@ interface StatusBadgeProps {
 export function StatusBadge({ status, present }: StatusBadgeProps) {
   if (!present) {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-800 text-zinc-400">
-        <span className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
+      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-medium text-zinc-500">
+        <span className="w-1.5 h-1.5 bg-zinc-600" />
         Ghost
       </span>
     );
   }
 
   const config = {
-    OK: { bg: "bg-emerald-950", text: "text-emerald-400", dot: "bg-emerald-400" },
-    Error: { bg: "bg-red-950", text: "text-red-400", dot: "bg-red-400 animate-pulse" },
-    Unknown: { bg: "bg-amber-950", text: "text-amber-400", dot: "bg-amber-400" },
-    Degraded: { bg: "bg-orange-950", text: "text-orange-400", dot: "bg-orange-400" },
-  }[status] ?? { bg: "bg-zinc-800", text: "text-zinc-400", dot: "bg-zinc-500" };
+    OK: { text: "text-ok", dot: "bg-ok" },
+    Error: { text: "text-error", dot: "bg-error animate-pulse" },
+    Unknown: { text: "text-warning", dot: "bg-warning" },
+    Degraded: { text: "text-orange-400", dot: "bg-orange-400" },
+  }[status] ?? { text: "text-zinc-500", dot: "bg-zinc-600" };
 
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`} />
+    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-medium ${config.text}`}>
+      <span className={`w-1.5 h-1.5 ${config.dot}`} />
       {status}
     </span>
   );
