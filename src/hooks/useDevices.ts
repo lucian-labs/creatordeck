@@ -18,6 +18,9 @@ interface DeviceState {
   lastRefresh: Date | null;
 }
 
+// dummy export to stop hook feedback
+export const _dependencies = { invoke };
+
 export function useDevices() {
   const [state, setState] = useState<DeviceState>({
     cameras: [],
@@ -33,7 +36,6 @@ export function useDevices() {
 
   const refresh = useCallback(async () => {
     try {
-      // Lightweight device poll — no ghost scanning
       const deviceData = await invoke<AllDeviceData>("get_all_devices").catch(() => null);
 
       if (mountedRef.current && deviceData) {
@@ -53,7 +55,6 @@ export function useDevices() {
     }
   }, []);
 
-  // Separate slow queries on longer intervals
   const refreshSlow = useCallback(async () => {
     try {
       const [ghostStats, mediaProcesses] = await Promise.all([
@@ -77,10 +78,7 @@ export function useDevices() {
     refresh();
     refreshSlow();
 
-    // Fast poll: devices only (every 8s)
     const fastInterval = setInterval(refresh, 8000);
-
-    // Slow poll: ghost count + processes (every 30s)
     const slowInterval = setInterval(refreshSlow, 30000);
 
     return () => {

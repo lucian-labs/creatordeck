@@ -1,117 +1,73 @@
 import { useState, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import {
-  Clock,
-  Plug,
-  Unplug,
-  AlertTriangle,
-  CheckCircle,
-  ArrowRightLeft,
-  Trash2,
-} from "lucide-react";
+import { Clock, Plug, Unplug, AlertTriangle, CheckCircle, ArrowRightLeft, Trash2 } from "lucide-react";
 import type { TimelineEvent } from "../types";
 
-const eventConfig: Record<
-  string,
-  { icon: React.ElementType; color: string }
-> = {
-  connected: { icon: Plug, color: "text-ok" },
-  disconnected: { icon: Unplug, color: "text-error" },
-  error: { icon: AlertTriangle, color: "text-error" },
-  recovered: { icon: CheckCircle, color: "text-ok" },
-  changed: { icon: ArrowRightLeft, color: "text-warning" },
+const evtMap: Record<string, { icon: React.ElementType; cls: string }> = {
+  connected: { icon: Plug, cls: "badge--ok" },
+  disconnected: { icon: Unplug, cls: "badge--error" },
+  error: { icon: AlertTriangle, cls: "badge--error" },
+  recovered: { icon: CheckCircle, cls: "badge--ok" },
+  changed: { icon: ArrowRightLeft, cls: "badge--warning" },
 };
 
 export function Timeline() {
   const [events, setEvents] = useState<TimelineEvent[]>([]);
 
   const refresh = useCallback(async () => {
-    try {
-      const data = await invoke<TimelineEvent[]>("get_timeline_events");
-      setEvents(data.reverse());
-    } catch {
-      // ignore
-    }
+    try { setEvents((await invoke<TimelineEvent[]>("get_timeline_events")).reverse()); } catch {}
   }, []);
 
   useEffect(() => {
     refresh();
-    const interval = setInterval(refresh, 5000);
-    return () => clearInterval(interval);
+    const i = setInterval(refresh, 5000);
+    return () => clearInterval(i);
   }, [refresh]);
 
-  async function clearTimeline() {
-    await invoke("clear_timeline");
-    setEvents([]);
-  }
-
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Clock className="w-4 h-4 text-muted" />
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">
-            Device Timeline
-          </h2>
+    <div>
+      <div className="flex-between">
+        <div className="section-header">
+          <Clock />
+          <span className="section-title">Device Timeline</span>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-[11px] text-muted/50">{events.length} events</span>
+        <div className="flex-center gap-md">
+          <span className="section-count">{events.length} events</span>
           {events.length > 0 && (
-            <button
-              onClick={clearTimeline}
-              className="p-1 text-muted hover:text-white transition-colors"
-              title="Clear timeline"
-            >
-              <Trash2 className="w-3 h-3" />
+            <button className="btn-icon" onClick={async () => { await invoke("clear_timeline"); setEvents([]); }} title="Clear">
+              <Trash2 />
             </button>
           )}
         </div>
       </div>
 
-      <div className="space-y-px">
-        {events.length === 0 ? (
-          <div className="py-8 space-y-2 text-center">
-            <Clock className="w-6 h-6 text-zinc-700 mx-auto" />
-            <p className="text-xs text-muted/60">
-              No device changes yet.
-            </p>
-            <p className="text-[10px] text-muted/40">
-              Keep CreatorDeck running to track connects, disconnects, and errors.
-            </p>
-          </div>
-        ) : (
-          events.map((event, i) => {
-            const config = eventConfig[event.event_type] || eventConfig.changed;
-            const Icon = config.icon;
-            return (
-              <div
-                key={`${event.timestamp}-${i}`}
-                className="flex items-start gap-3 border-b border-border/30 px-5 py-4"
-              >
-                <Icon className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${config.color}`} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-xs font-medium truncate">
-                      {event.device_name}
-                    </p>
-                    <span className={`text-[10px] font-medium shrink-0 ${config.color}`}>
-                      {event.event_type}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-2 mt-0.5">
-                    <p className="text-[10px] text-muted/50 truncate">
-                      {event.detail}
-                    </p>
-                    <span className="text-[10px] text-muted/40 shrink-0">
-                      {event.timestamp.split(" ")[1] || event.timestamp}
-                    </span>
-                  </div>
+      {events.length === 0 ? (
+        <div className="timeline-empty">
+          <Clock />
+          <p>No device changes yet.</p>
+          <p className="sub">Keep CreatorDeck running to track connects, disconnects, and errors.</p>
+        </div>
+      ) : (
+        events.map((event, i) => {
+          const cfg = evtMap[event.event_type] || evtMap.changed;
+          const Icon = cfg.icon;
+          return (
+            <div key={`${event.timestamp}-${i}`} className="row" style={{ padding: "12px 20px" }}>
+              <Icon style={{ width: 14, height: 14, marginTop: 2, flexShrink: 0 }} className={cfg.cls} />
+              <div className="row-info">
+                <div className="flex-between">
+                  <span className="row-name" style={{ fontSize: 12 }}>{event.device_name}</span>
+                  <span className={cfg.cls} style={{ fontSize: 10, fontWeight: 500, flexShrink: 0 }}>{event.event_type}</span>
+                </div>
+                <div className="flex-between" style={{ marginTop: 2 }}>
+                  <span className="row-sub">{event.detail}</span>
+                  <span style={{ fontSize: 10, color: "var(--text-dim)", flexShrink: 0 }}>{event.timestamp.split(" ")[1] || event.timestamp}</span>
                 </div>
               </div>
-            );
-          })
-        )}
-      </div>
+            </div>
+          );
+        })
+      )}
     </div>
   );
 }

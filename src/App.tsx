@@ -9,38 +9,23 @@ import { SettingsBar } from "./components/SettingsBar";
 
 function App() {
   const {
-    cameras,
-    audioEndpoints,
-    usbDevices,
-    ghostStats,
-    mediaProcesses,
-    loading,
-    lastRefresh,
-    refresh,
+    cameras, audioEndpoints, usbDevices, ghostStats,
+    mediaProcesses, loading, lastRefresh, refresh,
   } = useDevices();
 
   return (
-    <div className="min-h-screen flex flex-col bg-surface text-zinc-100">
+    <div className="app">
       <Header lastRefresh={lastRefresh} loading={loading} onRefresh={refresh} />
-
-      <main className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-px bg-border overflow-auto">
-        {/* Left: What is using what */}
-        <section className="lg:col-span-2 bg-surface p-8 space-y-8">
+      <div className="app-main">
+        <div className="panel">
           <ProcessList processes={mediaProcesses} />
           <Timeline />
-        </section>
-
-        {/* Right: Devices & health */}
-        <aside className="bg-surface p-8 space-y-8">
-          <Dashboard
-            cameras={cameras}
-            audioEndpoints={audioEndpoints}
-            loading={loading}
-          />
+        </div>
+        <div className="panel">
+          <Dashboard cameras={cameras} audioEndpoints={audioEndpoints} loading={loading} />
           <UsbHealthPanel usbDevices={usbDevices} ghostStats={ghostStats} />
-        </aside>
-      </main>
-
+        </div>
+      </div>
       <QuickActions ghostStats={ghostStats} onActionComplete={refresh} />
       <SettingsBar />
     </div>

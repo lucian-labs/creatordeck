@@ -7,11 +7,7 @@ interface DeviceCardProps {
   category: DeviceCategory;
 }
 
-const icons = {
-  camera: Camera,
-  audio: Mic,
-  usb: Usb,
-};
+const icons = { camera: Camera, audio: Mic, usb: Usb };
 
 export function DeviceCard({ device, category }: DeviceCardProps) {
   const Icon = icons[category];
@@ -20,33 +16,15 @@ export function DeviceCard({ device, category }: DeviceCardProps) {
   const isBad = device.Status !== "OK";
 
   return (
-    <div
-      className={`border-b border-border/50 px-5 py-4 transition-all ${
-        isGhost
-          ? "opacity-40"
-          : isBad
-            ? "bg-red-950/10"
-            : "hover:bg-surface-hover"
-      }`}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-3 min-w-0">
-          <div className="mt-0.5 p-1.5">
-            {isGhost ? (
-              <Ghost className="w-4 h-4 text-zinc-600" />
-            ) : (
-              <Icon className={`w-4 h-4 ${isBad ? "text-error" : "text-accent"}`} />
-            )}
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm font-medium truncate">{name}</p>
-            <p className="text-xs text-muted/60 truncate mt-0.5">
-              {device.InstanceId.split("\\").slice(0, 2).join("\\")}
-            </p>
-          </div>
-        </div>
-        <StatusBadge status={device.Status} present={device.Present} />
+    <div className={`row ${isGhost ? "row-ghost" : ""} ${isBad && !isGhost ? "row-bad" : ""}`}>
+      <div className={`device-icon ${isGhost ? "device-icon--ghost" : isBad ? "device-icon--error" : "device-icon--accent"}`}>
+        {isGhost ? <Ghost /> : <Icon />}
       </div>
+      <div className="row-info">
+        <div className="row-name">{name}</div>
+        <div className="row-sub">{device.InstanceId.split("\\").slice(0, 2).join("\\")}</div>
+      </div>
+      <StatusBadge status={device.Status} present={device.Present} />
     </div>
   );
 }

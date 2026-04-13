@@ -1,14 +1,6 @@
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import {
-  Usb,
-  Ghost,
-  AlertTriangle,
-  HardDrive,
-  RotateCw,
-  Loader2,
-  Info,
-} from "lucide-react";
+import { Usb, Ghost, AlertTriangle, HardDrive, RotateCw, Loader2, Info } from "lucide-react";
 import type { DeviceInfo, GhostStats } from "../types";
 import { StatusBadge } from "./StatusBadge";
 import { GhostViewer } from "./GhostViewer";
@@ -25,63 +17,31 @@ function UsbDeviceRow({ device, onReset }: { device: DeviceInfo; onReset: () => 
 
   async function handleReset() {
     setResetting(true);
-    try {
-      await invoke("reset_device", { instanceId: device.InstanceId });
-      onReset();
-    } catch {
-      // ignore
-    } finally {
-      setResetting(false);
-    }
+    try { await invoke("reset_device", { instanceId: device.InstanceId }); onReset(); }
+    catch {} finally { setResetting(false); }
   }
 
-  async function showDetail() {
-    try {
-      const raw = await invoke<string>("get_device_detail", {
-        instanceId: device.InstanceId,
-      });
-      setDetail(detail ? null : raw);
-    } catch {
-      setDetail("Could not fetch details");
-    }
+  async function toggleDetail() {
+    if (detail) { setDetail(null); return; }
+    try { setDetail(await invoke<string>("get_device_detail", { instanceId: device.InstanceId })); }
+    catch { setDetail("Could not fetch details"); }
   }
 
   return (
-    <div className={`border-b border-border/30 px-5 py-3.5 text-xs ${isBad ? "bg-red-950/10" : ""}`}>
-      <div className="flex items-center justify-between gap-2">
-        <span className="truncate flex-1">{device.FriendlyName || "Unknown"}</span>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <StatusBadge status={device.Status} present={device.Present} />
-          {isBad && (
-            <>
-              <button
-                onClick={showDetail}
-                className="p-1 text-zinc-500 hover:text-white transition-colors"
-                title="Device details"
-              >
-                <Info className="w-3 h-3" />
-              </button>
-              <button
-                onClick={handleReset}
-                disabled={resetting}
-                className="p-1 text-warning hover:text-amber-300 transition-colors"
-                title="Reset this device (UAC)"
-              >
-                {resetting ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <RotateCw className="w-3 h-3" />
-                )}
-              </button>
-            </>
-          )}
-        </div>
+    <div className={`row ${isBad ? "row-bad" : ""}`} style={{ padding: "12px 20px", fontSize: 12 }}>
+      <span className="truncate" style={{ flex: 1 }}>{device.FriendlyName || "Unknown"}</span>
+      <div className="usb-actions">
+        <StatusBadge status={device.Status} present={device.Present} />
+        {isBad && (
+          <>
+            <button onClick={toggleDetail} title="Details"><Info /></button>
+            <button onClick={handleReset} disabled={resetting} title="Reset (UAC)" style={{ color: "var(--warning)" }}>
+              {resetting ? <Loader2 className="spin" /> : <RotateCw />}
+            </button>
+          </>
+        )}
       </div>
-      {detail && (
-        <pre className="mt-2 text-[10px] text-muted bg-black/20 p-3 overflow-x-auto whitespace-pre-wrap">
-          {detail}
-        </pre>
-      )}
+      {detail && <pre className="usb-detail">{detail}</pre>}
     </div>
   );
 }
@@ -91,73 +51,55 @@ export function UsbHealthPanel({ usbDevices, ghostStats }: UsbHealthPanelProps) 
   const erroredCount = usbDevices.filter((d) => d.Status !== "OK").length;
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center gap-2">
-        <Usb className="w-4 h-4 text-muted" />
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">
-          USB Health
-        </h2>
+    <div>
+      <div className="section-header">
+        <Usb />
+        <span className="section-title">USB Health</span>
       </div>
 
-      {/* Controllers */}
-      <div className="space-y-1">
-        <p className="text-[11px] text-muted/60 flex items-center gap-1.5 px-4">
-          <HardDrive className="w-3 h-3" />
-          Controllers & Hubs
-          {erroredCount > 0 && (
-            <span className="text-error font-medium">
-              ({erroredCount} failing)
-            </span>
-          )}
-        </p>
-        <div>
-          {usbDevices.map((d) => (
-            <UsbDeviceRow
-              key={d.InstanceId}
-              device={d}
-              onReset={() => setTick((t) => t + 1)}
-            />
-          ))}
-          {usbDevices.length === 0 && (
-            <p className="text-xs text-muted italic px-4 py-2">No USB controllers detected</p>
-          )}
+      <div style={{ marginTop: 8 }}>
+        <div className="section-header" style={{ paddingLeft: 20 }}>
+          <HardDrive style={{ width: 12, height: 12 }} />
+          <span className="section-count">
+            Controllers & Hubs
+            {erroredCount > 0 && <span style={{ color: "var(--error)", fontWeight: 500 }}> ({erroredCount} failing)</span>}
+          </span>
         </div>
+        {usbDevices.map((d) => (
+          <UsbDeviceRow key={d.InstanceId} device={d} onReset={() => setTick((t) => t + 1)} />
+        ))}
+        {usbDevices.length === 0 && <div className="row-sub" style={{ padding: "8px 20px" }}>No USB controllers detected</div>}
       </div>
 
-      {/* Ghost Stats */}
       {ghostStats && (
-        <div className="space-y-3 px-4">
-          <p className="text-[11px] text-muted/60 flex items-center gap-1.5">
-            <Ghost className="w-3 h-3" />
-            Ghost Devices
-          </p>
-          <div className="grid grid-cols-4 gap-px bg-border/30">
+        <div style={{ marginTop: 24 }}>
+          <div className="section-header" style={{ paddingLeft: 20 }}>
+            <Ghost style={{ width: 12, height: 12 }} />
+            <span className="section-count">Ghost Devices</span>
+          </div>
+          <div className="ghost-grid" style={{ margin: "8px 20px 0" }}>
             {[
               { label: "Cam", value: ghostStats.camera, warn: ghostStats.camera > 0 },
               { label: "Audio", value: ghostStats.audio, warn: ghostStats.audio > 10 },
               { label: "USB", value: ghostStats.usb, warn: ghostStats.usb > 20 },
               { label: "Total", value: ghostStats.total, warn: ghostStats.total > 100 },
             ].map(({ label, value, warn }) => (
-              <div key={label} className="bg-surface-raised px-3 py-2.5 text-center">
-                <p className={`text-base font-bold ${warn ? "text-warning" : "text-zinc-400"}`}>
-                  {value}
-                </p>
-                <p className="text-[10px] text-muted/50 uppercase tracking-wider">{label}</p>
+              <div key={label} className="ghost-stat">
+                <div className={`ghost-stat-value ${warn ? "ghost-stat-value--warn" : ""}`}>{value}</div>
+                <div className="ghost-stat-label">{label}</div>
               </div>
             ))}
           </div>
           {ghostStats.total > 50 && (
-            <div className="flex items-start gap-2.5 px-1 py-2">
-              <AlertTriangle className="w-3.5 h-3.5 text-warning mt-0.5 shrink-0" />
-              <p className="text-[11px] text-muted/70">
-                {ghostStats.total} ghost devices. Inspect before cleaning.
-              </p>
+            <div className="alert" style={{ padding: "8px 20px" }}>
+              <AlertTriangle />
+              <p>{ghostStats.total} ghost devices. Inspect before cleaning.</p>
             </div>
           )}
         </div>
       )}
 
-      <div className="px-4">
+      <div style={{ padding: "16px 20px 0" }}>
         <GhostViewer />
       </div>
     </div>

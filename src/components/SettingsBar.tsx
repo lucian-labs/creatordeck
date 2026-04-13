@@ -6,41 +6,22 @@ export function SettingsBar() {
   const [autostart, setAutostart] = useState(false);
 
   useEffect(() => {
-    invoke<boolean>("plugin:autostart|is_enabled")
-      .then(setAutostart)
-      .catch(() => {});
+    invoke<boolean>("plugin:autostart|is_enabled").then(setAutostart).catch(() => {});
   }, []);
 
-  async function toggleAutostart() {
+  async function toggle() {
     try {
-      if (autostart) {
-        await invoke("plugin:autostart|disable");
-        setAutostart(false);
-      } else {
-        await invoke("plugin:autostart|enable");
-        setAutostart(true);
-      }
-    } catch {
-      // ignore
-    }
+      await invoke(autostart ? "plugin:autostart|disable" : "plugin:autostart|enable");
+      setAutostart(!autostart);
+    } catch {}
   }
 
   return (
-    <div className="flex items-center gap-3 px-6 py-2.5 border-t border-border/50">
-      <button
-        onClick={toggleAutostart}
-        className={`flex items-center gap-1.5 px-2.5 py-1 text-[11px] transition-colors ${
-          autostart
-            ? "bg-accent/15 text-accent"
-            : "text-muted/50 hover:text-muted"
-        }`}
-      >
-        <Power className="w-3 h-3" />
-        {autostart ? "Autostart: On" : "Autostart: Off"}
+    <div className="settings-bar">
+      <button onClick={toggle} className={`autostart-btn ${autostart ? "autostart-btn--on" : "autostart-btn--off"}`}>
+        <Power /> {autostart ? "Autostart: On" : "Autostart: Off"}
       </button>
-      <span className="text-[10px] text-muted/30">
-        {autostart ? "Starts with Windows" : ""}
-      </span>
+      {autostart && <span className="settings-hint">Starts with Windows</span>}
     </div>
   );
 }
