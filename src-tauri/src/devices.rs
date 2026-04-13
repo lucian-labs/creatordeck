@@ -25,48 +25,81 @@ pub struct GhostStats {
     pub total: u32,
 }
 
-fn parse_devices(json: &str) -> Result<Vec<DeviceInfo>, String> {
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct AllDeviceData {
+    pub cameras: Vec<DeviceInfo>,
+    pub audio_endpoints: Vec<DeviceInfo>,
+    pub usb_devices: Vec<DeviceInfo>,
+    pub ghost_stats: GhostStats,
+}
+
+fn parse_devices(json: &str) -> Vec<DeviceInfo> {
     if json.is_empty() || json == "null" {
-        return Ok(vec![]);
+        return vec![];
     }
-    // PowerShell returns a single object (not array) when there's only one result
     if json.starts_with('[') {
-        serde_json::from_str(json).map_err(|e| format!("Parse error: {}", e))
+        serde_json::from_str(json).unwrap_or_default()
     } else {
-        let single: DeviceInfo =
-            serde_json::from_str(json).map_err(|e| format!("Parse error: {}", e))?;
-        Ok(vec![single])
+        serde_json::from_str::<DeviceInfo>(json)
+            .map(|d| vec![d])
+            .unwrap_or_default()
     }
+}
+
+/// Single PowerShell call that fetches all device data at once.
+/// Runs on Tauri's blocking thread pool (sync commands are auto-threaded).
+#[tauri::command]
+pub fn get_all_devices() -> Result<AllDeviceData, String> {
+    let json = run_ps(
+        r#"
+$cameras = @(Get-PnpDevice -Class Camera -EA SilentlyContinue | Select FriendlyName, Status, Present, InstanceId, Problem, Class)
+$audio = @(Get-PnpDevice -Class AudioEndpoint -EA SilentlyContinue | Where { $_.Present } | Select FriendlyName, Status, Present, InstanceId, Problem, Class)
+$usb = @(Get-PnpDevice -Class USB -PresentOnly -EA SilentlyContinue | Select FriendlyName, Status, Present, InstanceId, Problem, Class)
+$gc = @(Get-PnpDevice -EA SilentlyContinue | Where { -not $_.Present })
+$gCam = @(Get-PnpDevice -Class Camera -EA SilentlyContinue | Where { -not $_.Present })
+$gAud = @(Get-PnpDevice -Class AudioEndpoint -EA SilentlyContinue | Where { -not $_.Present })
+$gUsb = @(Get-PnpDevice -Class USB -EA SilentlyContinue | Where { -not $_.Present })
+@{
+  cameras = $cameras
+  audio_endpoints = $audio
+  usb_devices = $usb
+  ghost_stats = @{ camera = $gCam.Count; audio = $gAud.Count; usb = $gUsb.Count; total = $gc.Count }
+} | ConvertTo-Json -Depth 3 -Compress
+"#,
+    )?;
+
+    serde_json::from_str::<AllDeviceData>(&json)
+        .map_err(|e| format!("Parse error: {}", e))
 }
 
 #[tauri::command]
 pub fn get_cameras() -> Result<Vec<DeviceInfo>, String> {
     let json = run_ps(
-        "Get-PnpDevice -Class Camera -ErrorAction SilentlyContinue | Select-Object FriendlyName, Status, Present, InstanceId, Problem, Class | ConvertTo-Json -Compress"
+        "Get-PnpDevice -Class Camera -EA SilentlyContinue | Select FriendlyName, Status, Present, InstanceId, Problem, Class | ConvertTo-Json -Compress"
     )?;
-    parse_devices(&json)
+    Ok(parse_devices(&json))
 }
 
 #[tauri::command]
 pub fn get_audio_endpoints() -> Result<Vec<DeviceInfo>, String> {
     let json = run_ps(
-        "Get-PnpDevice -Class AudioEndpoint -ErrorAction SilentlyContinue | Where-Object { $_.Present } | Select-Object FriendlyName, Status, Present, InstanceId, Problem, Class | ConvertTo-Json -Compress"
+        "Get-PnpDevice -Class AudioEndpoint -EA SilentlyContinue | Where { $_.Present } | Select FriendlyName, Status, Present, InstanceId, Problem, Class | ConvertTo-Json -Compress"
     )?;
-    parse_devices(&json)
+    Ok(parse_devices(&json))
 }
 
 #[tauri::command]
 pub fn get_usb_devices() -> Result<Vec<DeviceInfo>, String> {
     let json = run_ps(
-        "Get-PnpDevice -Class USB -PresentOnly -ErrorAction SilentlyContinue | Select-Object FriendlyName, Status, Present, InstanceId, Problem, Class | ConvertTo-Json -Compress"
+        "Get-PnpDevice -Class USB -PresentOnly -EA SilentlyContinue | Select FriendlyName, Status, Present, InstanceId, Problem, Class | ConvertTo-Json -Compress"
     )?;
-    parse_devices(&json)
+    Ok(parse_devices(&json))
 }
 
 #[tauri::command]
 pub fn get_ghost_count() -> Result<GhostStats, String> {
     let json = run_ps(
-        "@{ camera = @(Get-PnpDevice -Class Camera -ErrorAction SilentlyContinue | Where-Object { -not $_.Present }).Count; audio = @(Get-PnpDevice -Class AudioEndpoint -ErrorAction SilentlyContinue | Where-Object { -not $_.Present }).Count; usb = @(Get-PnpDevice -Class USB -ErrorAction SilentlyContinue | Where-Object { -not $_.Present }).Count; total = @(Get-PnpDevice -ErrorAction SilentlyContinue | Where-Object { -not $_.Present }).Count } | ConvertTo-Json -Compress"
+        "@{ camera = @(Get-PnpDevice -Class Camera -EA SilentlyContinue | Where { -not $_.Present }).Count; audio = @(Get-PnpDevice -Class AudioEndpoint -EA SilentlyContinue | Where { -not $_.Present }).Count; usb = @(Get-PnpDevice -Class USB -EA SilentlyContinue | Where { -not $_.Present }).Count; total = @(Get-PnpDevice -EA SilentlyContinue | Where { -not $_.Present }).Count } | ConvertTo-Json -Compress"
     )?;
     serde_json::from_str(&json).map_err(|e| format!("Parse error: {}", e))
 }

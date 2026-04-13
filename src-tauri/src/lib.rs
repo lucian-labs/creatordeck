@@ -126,6 +126,7 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            devices::get_all_devices,
             devices::get_cameras,
             devices::get_audio_endpoints,
             devices::get_usb_devices,

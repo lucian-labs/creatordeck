@@ -2,6 +2,13 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { DeviceInfo, GhostStats, ProcessInfo } from "../types";
 
+interface AllDeviceData {
+  cameras: DeviceInfo[];
+  audio_endpoints: DeviceInfo[];
+  usb_devices: DeviceInfo[];
+  ghost_stats: GhostStats;
+}
+
 interface DeviceState {
   cameras: DeviceInfo[];
   audioEndpoints: DeviceInfo[];
@@ -12,7 +19,7 @@ interface DeviceState {
   lastRefresh: Date | null;
 }
 
-export function useDevices(pollInterval = 5000) {
+export function useDevices(pollInterval = 8000) {
   const [state, setState] = useState<DeviceState>({
     cameras: [],
     audioEndpoints: [],
@@ -27,21 +34,19 @@ export function useDevices(pollInterval = 5000) {
 
   const refresh = useCallback(async () => {
     try {
-      const [cameras, audioEndpoints, usbDevices, ghostStats, mediaProcesses] =
-        await Promise.all([
-          invoke<DeviceInfo[]>("get_cameras").catch(() => []),
-          invoke<DeviceInfo[]>("get_audio_endpoints").catch(() => []),
-          invoke<DeviceInfo[]>("get_usb_devices").catch(() => []),
-          invoke<GhostStats>("get_ghost_count").catch(() => null),
-          invoke<ProcessInfo[]>("get_media_processes").catch(() => []),
-        ]);
+      // Single consolidated PowerShell call for all device data
+      // + separate call for processes (different query type)
+      const [deviceData, mediaProcesses] = await Promise.all([
+        invoke<AllDeviceData>("get_all_devices").catch(() => null),
+        invoke<ProcessInfo[]>("get_media_processes").catch(() => []),
+      ]);
 
       if (mountedRef.current) {
         setState({
-          cameras,
-          audioEndpoints,
-          usbDevices,
-          ghostStats,
+          cameras: deviceData?.cameras ?? [],
+          audioEndpoints: deviceData?.audio_endpoints ?? [],
+          usbDevices: deviceData?.usb_devices ?? [],
+          ghostStats: deviceData?.ghost_stats ?? null,
           mediaProcesses,
           loading: false,
           lastRefresh: new Date(),
