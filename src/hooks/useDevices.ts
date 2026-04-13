@@ -2,10 +2,15 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { DeviceInfo, GhostStats, ProcessInfo } from "../types";
 
-interface AllDeviceData {
-  cameras: DeviceInfo[];
-  audio_endpoints: DeviceInfo[];
-  usb_devices: DeviceInfo[];
+interface CachedData {
+  devices: {
+    cameras: DeviceInfo[];
+    audio_endpoints: DeviceInfo[];
+    usb_devices: DeviceInfo[];
+  } | null;
+  ghost_stats: GhostStats | null;
+  processes: ProcessInfo[];
+  last_updated: string;
 }
 
 interface DeviceState {
@@ -17,9 +22,6 @@ interface DeviceState {
   loading: boolean;
   lastRefresh: Date | null;
 }
-
-// dummy export to stop hook feedback
-export const _dependencies = { invoke };
 
 export function useDevices() {
   const [state, setState] = useState<DeviceState>({
@@ -36,17 +38,19 @@ export function useDevices() {
 
   const refresh = useCallback(async () => {
     try {
-      const deviceData = await invoke<AllDeviceData>("get_all_devices").catch(() => null);
+      // Single instant read from Rust cache — no PowerShell spawning
+      const data = await invoke<CachedData>("get_cached_data");
 
-      if (mountedRef.current && deviceData) {
-        setState((prev) => ({
-          ...prev,
-          cameras: deviceData.cameras,
-          audioEndpoints: deviceData.audio_endpoints,
-          usbDevices: deviceData.usb_devices,
+      if (mountedRef.current) {
+        setState({
+          cameras: data.devices?.cameras ?? [],
+          audioEndpoints: data.devices?.audio_endpoints ?? [],
+          usbDevices: data.devices?.usb_devices ?? [],
+          ghostStats: data.ghost_stats,
+          mediaProcesses: data.processes,
           loading: false,
           lastRefresh: new Date(),
-        }));
+        });
       }
     } catch {
       if (mountedRef.current) {
@@ -55,42 +59,16 @@ export function useDevices() {
     }
   }, []);
 
-  const refreshSlow = useCallback(async () => {
-    try {
-      const [ghostStats, mediaProcesses] = await Promise.all([
-        invoke<GhostStats>("get_ghost_count").catch(() => null),
-        invoke<ProcessInfo[]>("get_media_processes").catch(() => []),
-      ]);
-      if (mountedRef.current) {
-        setState((prev) => ({
-          ...prev,
-          ghostStats: ghostStats ?? prev.ghostStats,
-          mediaProcesses,
-        }));
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
-
   useEffect(() => {
     mountedRef.current = true;
     refresh();
-    refreshSlow();
-
-    const fastInterval = setInterval(refresh, 8000);
-    const slowInterval = setInterval(refreshSlow, 30000);
-
+    // Poll cache every 2s — this is instant since it just reads memory
+    const interval = setInterval(refresh, 2000);
     return () => {
       mountedRef.current = false;
-      clearInterval(fastInterval);
-      clearInterval(slowInterval);
+      clearInterval(interval);
     };
-  }, [refresh, refreshSlow]);
+  }, [refresh]);
 
-  const fullRefresh = useCallback(async () => {
-    await Promise.all([refresh(), refreshSlow()]);
-  }, [refresh, refreshSlow]);
-
-  return { ...state, refresh: fullRefresh };
+  return { ...state, refresh };
 }
