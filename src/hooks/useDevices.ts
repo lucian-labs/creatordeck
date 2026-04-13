@@ -6,7 +6,6 @@ interface AllDeviceData {
   cameras: DeviceInfo[];
   audio_endpoints: DeviceInfo[];
   usb_devices: DeviceInfo[];
-  ghost_stats: GhostStats;
 }
 
 interface DeviceState {
@@ -19,7 +18,7 @@ interface DeviceState {
   lastRefresh: Date | null;
 }
 
-export function useDevices(pollInterval = 8000) {
+export function useDevices() {
   const [state, setState] = useState<DeviceState>({
     cameras: [],
     audioEndpoints: [],
@@ -34,23 +33,18 @@ export function useDevices(pollInterval = 8000) {
 
   const refresh = useCallback(async () => {
     try {
-      // Single consolidated PowerShell call for all device data
-      // + separate call for processes (different query type)
-      const [deviceData, mediaProcesses] = await Promise.all([
-        invoke<AllDeviceData>("get_all_devices").catch(() => null),
-        invoke<ProcessInfo[]>("get_media_processes").catch(() => []),
-      ]);
+      // Lightweight device poll — no ghost scanning
+      const deviceData = await invoke<AllDeviceData>("get_all_devices").catch(() => null);
 
-      if (mountedRef.current) {
-        setState({
-          cameras: deviceData?.cameras ?? [],
-          audioEndpoints: deviceData?.audio_endpoints ?? [],
-          usbDevices: deviceData?.usb_devices ?? [],
-          ghostStats: deviceData?.ghost_stats ?? null,
-          mediaProcesses,
+      if (mountedRef.current && deviceData) {
+        setState((prev) => ({
+          ...prev,
+          cameras: deviceData.cameras,
+          audioEndpoints: deviceData.audio_endpoints,
+          usbDevices: deviceData.usb_devices,
           loading: false,
           lastRefresh: new Date(),
-        });
+        }));
       }
     } catch {
       if (mountedRef.current) {
@@ -59,15 +53,46 @@ export function useDevices(pollInterval = 8000) {
     }
   }, []);
 
+  // Separate slow queries on longer intervals
+  const refreshSlow = useCallback(async () => {
+    try {
+      const [ghostStats, mediaProcesses] = await Promise.all([
+        invoke<GhostStats>("get_ghost_count").catch(() => null),
+        invoke<ProcessInfo[]>("get_media_processes").catch(() => []),
+      ]);
+      if (mountedRef.current) {
+        setState((prev) => ({
+          ...prev,
+          ghostStats: ghostStats ?? prev.ghostStats,
+          mediaProcesses,
+        }));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
   useEffect(() => {
     mountedRef.current = true;
     refresh();
-    const interval = setInterval(refresh, pollInterval);
+    refreshSlow();
+
+    // Fast poll: devices only (every 8s)
+    const fastInterval = setInterval(refresh, 8000);
+
+    // Slow poll: ghost count + processes (every 30s)
+    const slowInterval = setInterval(refreshSlow, 30000);
+
     return () => {
       mountedRef.current = false;
-      clearInterval(interval);
+      clearInterval(fastInterval);
+      clearInterval(slowInterval);
     };
-  }, [refresh, pollInterval]);
+  }, [refresh, refreshSlow]);
 
-  return { ...state, refresh };
+  const fullRefresh = useCallback(async () => {
+    await Promise.all([refresh(), refreshSlow()]);
+  }, [refresh, refreshSlow]);
+
+  return { ...state, refresh: fullRefresh };
 }

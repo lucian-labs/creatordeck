@@ -1,17 +1,98 @@
-import { Usb, Ghost, AlertTriangle, HardDrive } from "lucide-react";
+import { useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import {
+  Usb,
+  Ghost,
+  AlertTriangle,
+  HardDrive,
+  RotateCw,
+  Loader2,
+  Info,
+} from "lucide-react";
 import type { DeviceInfo, GhostStats } from "../types";
 import { StatusBadge } from "./StatusBadge";
+import { GhostViewer } from "./GhostViewer";
 
 interface UsbHealthPanelProps {
   usbDevices: DeviceInfo[];
   ghostStats: GhostStats | null;
 }
 
-export function UsbHealthPanel({ usbDevices, ghostStats }: UsbHealthPanelProps) {
-  const controllers = usbDevices.filter(
-    (d) => d.FriendlyName?.match(/Host Controller|Root Hub/i)
+function UsbDeviceRow({ device, onReset }: { device: DeviceInfo; onReset: () => void }) {
+  const [resetting, setResetting] = useState(false);
+  const [detail, setDetail] = useState<string | null>(null);
+  const isBad = device.Status !== "OK";
+
+  async function handleReset() {
+    setResetting(true);
+    try {
+      await invoke("reset_device", { instanceId: device.InstanceId });
+      onReset();
+    } catch {
+      // UAC cancelled or failed
+    } finally {
+      setResetting(false);
+    }
+  }
+
+  async function showDetail() {
+    try {
+      const raw = await invoke<string>("get_device_detail", {
+        instanceId: device.InstanceId,
+      });
+      setDetail(raw);
+    } catch {
+      setDetail("Could not fetch details");
+    }
+  }
+
+  return (
+    <div
+      className={`rounded-lg px-3 py-2 text-xs ${
+        isBad ? "bg-red-950/30 border border-red-900/30" : "bg-zinc-900/50"
+      }`}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className="truncate flex-1">{device.FriendlyName || "Unknown"}</span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <StatusBadge status={device.Status} present={device.Present} />
+          {isBad && (
+            <>
+              <button
+                onClick={showDetail}
+                className="p-1 rounded text-zinc-500 hover:text-white hover:bg-surface-hover transition-colors"
+                title="Device details"
+              >
+                <Info className="w-3 h-3" />
+              </button>
+              <button
+                onClick={handleReset}
+                disabled={resetting}
+                className="p-1 rounded text-amber-500 hover:text-amber-300 hover:bg-amber-950/30 transition-colors"
+                title="Reset this device (UAC)"
+              >
+                {resetting ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <RotateCw className="w-3 h-3" />
+                )}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+      {detail && (
+        <pre className="mt-1.5 text-[10px] text-muted bg-black/30 rounded p-2 overflow-x-auto whitespace-pre-wrap">
+          {detail}
+        </pre>
+      )}
+    </div>
   );
-  const erroredControllers = controllers.filter((d) => d.Status !== "OK");
+}
+
+export function UsbHealthPanel({ usbDevices, ghostStats }: UsbHealthPanelProps) {
+  const [, setTick] = useState(0);
+  const erroredCount = usbDevices.filter((d) => d.Status !== "OK").length;
 
   return (
     <div className="rounded-xl border border-border bg-surface-raised p-4 space-y-4">
@@ -27,29 +108,21 @@ export function UsbHealthPanel({ usbDevices, ghostStats }: UsbHealthPanelProps) 
         <p className="text-xs text-muted flex items-center gap-1.5">
           <HardDrive className="w-3 h-3" />
           Controllers & Hubs
-          {erroredControllers.length > 0 && (
+          {erroredCount > 0 && (
             <span className="text-red-400 font-medium">
-              ({erroredControllers.length} failing)
+              ({erroredCount} failing)
             </span>
           )}
         </p>
-        <div className="space-y-1.5 max-h-40 overflow-y-auto">
-          {controllers.map((d) => (
-            <div
+        <div className="space-y-1.5 max-h-48 overflow-y-auto">
+          {usbDevices.map((d) => (
+            <UsbDeviceRow
               key={d.InstanceId}
-              className={`flex items-center justify-between rounded-lg px-3 py-1.5 text-xs ${
-                d.Status !== "OK"
-                  ? "bg-red-950/30 border border-red-900/30"
-                  : "bg-zinc-900/50"
-              }`}
-            >
-              <span className="truncate mr-2">
-                {d.FriendlyName || "Unknown"}
-              </span>
-              <StatusBadge status={d.Status} present={d.Present} />
-            </div>
+              device={d}
+              onReset={() => setTick((t) => t + 1)}
+            />
           ))}
-          {controllers.length === 0 && (
+          {usbDevices.length === 0 && (
             <p className="text-xs text-muted italic">No USB controllers detected</p>
           )}
         </div>
@@ -86,12 +159,15 @@ export function UsbHealthPanel({ usbDevices, ghostStats }: UsbHealthPanelProps) 
             <div className="flex items-start gap-2 rounded-lg bg-amber-950/20 border border-amber-900/20 px-3 py-2">
               <AlertTriangle className="w-3.5 h-3.5 text-warning mt-0.5 shrink-0" />
               <p className="text-xs text-amber-300/80">
-                {ghostStats.total} ghost devices detected. Use "Clean Ghosts" to remove stale entries.
+                {ghostStats.total} ghost devices. Inspect them below before cleaning.
               </p>
             </div>
           )}
         </div>
       )}
+
+      {/* Ghost Device Viewer */}
+      <GhostViewer />
     </div>
   );
 }

@@ -22,6 +22,12 @@ export interface ProcessInfo {
 
 export type DeviceCategory = "camera" | "audio" | "usb";
 
+export interface GhostDevice {
+  name: string;
+  class: string;
+  instance_id: string;
+}
+
 export interface TimelineEvent {
   timestamp: string;
   device_name: string;

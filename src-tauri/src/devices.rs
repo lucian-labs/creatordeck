@@ -26,11 +26,17 @@ pub struct GhostStats {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct GhostDevice {
+    pub name: String,
+    pub class: String,
+    pub instance_id: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AllDeviceData {
     pub cameras: Vec<DeviceInfo>,
     pub audio_endpoints: Vec<DeviceInfo>,
     pub usb_devices: Vec<DeviceInfo>,
-    pub ghost_stats: GhostStats,
 }
 
 fn parse_devices(json: &str) -> Vec<DeviceInfo> {
@@ -46,30 +52,46 @@ fn parse_devices(json: &str) -> Vec<DeviceInfo> {
     }
 }
 
-/// Single PowerShell call that fetches all device data at once.
-/// Runs on Tauri's blocking thread pool (sync commands are auto-threaded).
+/// Lightweight poll — only present/active devices, no ghost scanning.
 #[tauri::command]
 pub fn get_all_devices() -> Result<AllDeviceData, String> {
     let json = run_ps(
         r#"
 $cameras = @(Get-PnpDevice -Class Camera -EA SilentlyContinue | Select FriendlyName, Status, Present, InstanceId, Problem, Class)
 $audio = @(Get-PnpDevice -Class AudioEndpoint -EA SilentlyContinue | Where { $_.Present } | Select FriendlyName, Status, Present, InstanceId, Problem, Class)
-$usb = @(Get-PnpDevice -Class USB -PresentOnly -EA SilentlyContinue | Select FriendlyName, Status, Present, InstanceId, Problem, Class)
-$gc = @(Get-PnpDevice -EA SilentlyContinue | Where { -not $_.Present })
-$gCam = @(Get-PnpDevice -Class Camera -EA SilentlyContinue | Where { -not $_.Present })
-$gAud = @(Get-PnpDevice -Class AudioEndpoint -EA SilentlyContinue | Where { -not $_.Present })
-$gUsb = @(Get-PnpDevice -Class USB -EA SilentlyContinue | Where { -not $_.Present })
-@{
-  cameras = $cameras
-  audio_endpoints = $audio
-  usb_devices = $usb
-  ghost_stats = @{ camera = $gCam.Count; audio = $gAud.Count; usb = $gUsb.Count; total = $gc.Count }
-} | ConvertTo-Json -Depth 3 -Compress
+$usb = @(Get-PnpDevice -Class USB -PresentOnly -EA SilentlyContinue | Where { $_.FriendlyName -match 'Host Controller|Root Hub' } | Select FriendlyName, Status, Present, InstanceId, Problem, Class)
+@{ cameras = $cameras; audio_endpoints = $audio; usb_devices = $usb } | ConvertTo-Json -Depth 3 -Compress
 "#,
     )?;
-
     serde_json::from_str::<AllDeviceData>(&json)
         .map_err(|e| format!("Parse error: {}", e))
+}
+
+/// Expensive query — only called on demand or infrequently.
+#[tauri::command]
+pub fn get_ghost_count() -> Result<GhostStats, String> {
+    let json = run_ps(
+        "@{ camera = @(Get-PnpDevice -Class Camera -EA SilentlyContinue | Where { -not $_.Present }).Count; audio = @(Get-PnpDevice -Class AudioEndpoint -EA SilentlyContinue | Where { -not $_.Present }).Count; usb = @(Get-PnpDevice -Class USB -EA SilentlyContinue | Where { -not $_.Present }).Count; total = @(Get-PnpDevice -EA SilentlyContinue | Where { -not $_.Present }).Count } | ConvertTo-Json -Compress"
+    )?;
+    serde_json::from_str(&json).map_err(|e| format!("Parse error: {}", e))
+}
+
+/// Returns actual ghost device names so user can inspect before deleting.
+#[tauri::command]
+pub fn get_ghost_devices() -> Result<Vec<GhostDevice>, String> {
+    let json = run_ps(
+        r#"@(Get-PnpDevice -EA SilentlyContinue | Where { -not $_.Present -and $_.FriendlyName -ne $null } | Select @{N='name';E={$_.FriendlyName}}, @{N='class';E={$_.Class}}, @{N='instance_id';E={$_.InstanceId}} | Sort-Object class, name) | ConvertTo-Json -Compress"#
+    )?;
+    if json.is_empty() || json == "null" {
+        return Ok(vec![]);
+    }
+    if json.starts_with('[') {
+        serde_json::from_str(&json).map_err(|e| format!("Parse error: {}", e))
+    } else {
+        serde_json::from_str::<GhostDevice>(&json)
+            .map(|d| vec![d])
+            .map_err(|e| format!("Parse error: {}", e))
+    }
 }
 
 #[tauri::command]
@@ -94,12 +116,4 @@ pub fn get_usb_devices() -> Result<Vec<DeviceInfo>, String> {
         "Get-PnpDevice -Class USB -PresentOnly -EA SilentlyContinue | Select FriendlyName, Status, Present, InstanceId, Problem, Class | ConvertTo-Json -Compress"
     )?;
     Ok(parse_devices(&json))
-}
-
-#[tauri::command]
-pub fn get_ghost_count() -> Result<GhostStats, String> {
-    let json = run_ps(
-        "@{ camera = @(Get-PnpDevice -Class Camera -EA SilentlyContinue | Where { -not $_.Present }).Count; audio = @(Get-PnpDevice -Class AudioEndpoint -EA SilentlyContinue | Where { -not $_.Present }).Count; usb = @(Get-PnpDevice -Class USB -EA SilentlyContinue | Where { -not $_.Present }).Count; total = @(Get-PnpDevice -EA SilentlyContinue | Where { -not $_.Present }).Count } | ConvertTo-Json -Compress"
-    )?;
-    serde_json::from_str(&json).map_err(|e| format!("Parse error: {}", e))
 }
