@@ -3,7 +3,9 @@ import { Header } from "./components/Header";
 import { Dashboard } from "./components/Dashboard";
 import { UsbHealthPanel } from "./components/UsbHealthPanel";
 import { ProcessList } from "./components/ProcessList";
+import { Timeline } from "./components/Timeline";
 import { QuickActions } from "./components/QuickActions";
+import { SettingsBar } from "./components/SettingsBar";
 
 function App() {
   const {
@@ -32,11 +34,13 @@ function App() {
 
         <aside className="space-y-4">
           <UsbHealthPanel usbDevices={usbDevices} ghostStats={ghostStats} />
+          <Timeline />
           <ProcessList processes={mediaProcesses} />
         </aside>
       </main>
 
       <QuickActions ghostStats={ghostStats} onActionComplete={refresh} />
+      <SettingsBar />
     </div>
   );
 }

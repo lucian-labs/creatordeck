@@ -21,3 +21,11 @@ export interface ProcessInfo {
 }
 
 export type DeviceCategory = "camera" | "audio" | "usb";
+
+export interface TimelineEvent {
+  timestamp: string;
+  device_name: string;
+  device_class: string;
+  event_type: "connected" | "disconnected" | "error" | "recovered" | "changed";
+  detail: string;
+}
