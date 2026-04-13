@@ -80,7 +80,7 @@ pub fn get_ghost_count() -> Result<GhostStats, String> {
 #[tauri::command]
 pub fn get_ghost_devices() -> Result<Vec<GhostDevice>, String> {
     let json = run_ps(
-        r#"@(Get-PnpDevice -EA SilentlyContinue | Where { -not $_.Present -and $_.FriendlyName -ne $null } | Select @{N='name';E={$_.FriendlyName}}, @{N='class';E={$_.Class}}, @{N='instance_id';E={$_.InstanceId}} | Sort-Object class, name) | ConvertTo-Json -Compress"#
+        r#"@(Get-PnpDevice -EA SilentlyContinue | Where { -not $_.Present -and $_.FriendlyName -ne $null } | Select @{N='name';E={$_.FriendlyName}}, @{N='class';E={if($_.Class){$_.Class}else{'Unknown'}}}, @{N='instance_id';E={$_.InstanceId}} | Sort-Object class, name) | ConvertTo-Json -Compress"#
     )?;
     if json.is_empty() || json == "null" {
         return Ok(vec![]);
