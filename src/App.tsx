@@ -23,7 +23,7 @@ function App() {
     <div className="min-h-screen flex flex-col bg-surface text-zinc-100">
       <Header lastRefresh={lastRefresh} loading={loading} onRefresh={refresh} />
 
-      <main className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 p-4 overflow-auto">
+      <main className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-5 p-5 overflow-auto">
         <section className="lg:col-span-2 space-y-4">
           <Dashboard
             cameras={cameras}

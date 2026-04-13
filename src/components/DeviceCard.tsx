@@ -21,12 +21,12 @@ export function DeviceCard({ device, category }: DeviceCardProps) {
 
   return (
     <div
-      className={`relative rounded-xl border p-4 transition-colors ${
+      className={`relative rounded-xl border p-4 transition-all ${
         isGhost
-          ? "border-zinc-800 bg-zinc-900/50 opacity-60"
+          ? "border-zinc-800 bg-zinc-900/40 opacity-50"
           : isBad
-            ? "border-red-900/50 bg-red-950/20"
-            : "border-border bg-surface-raised hover:bg-surface-hover"
+            ? "border-red-800/40 bg-red-950/20"
+            : "border-border bg-surface-raised hover:bg-surface-hover hover:border-zinc-600/50"
       }`}
     >
       <div className="flex items-start justify-between gap-3">

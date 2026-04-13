@@ -46,7 +46,7 @@ export function Dashboard({ cameras, audioEndpoints, loading }: DashboardProps) 
         {cameras.length === 0 ? (
           <p className="text-sm text-muted italic">No camera devices found</p>
         ) : (
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-3.5">
             {cameras
               .sort((a, b) => (a.Present === b.Present ? 0 : a.Present ? -1 : 1))
               .map((d) => (
@@ -61,7 +61,7 @@ export function Dashboard({ cameras, audioEndpoints, loading }: DashboardProps) 
         {audioEndpoints.length === 0 ? (
           <p className="text-sm text-muted italic">No audio endpoints found</p>
         ) : (
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-3.5">
             {audioEndpoints
               .sort((a, b) => (a.Present === b.Present ? 0 : a.Present ? -1 : 1))
               .map((d) => (
