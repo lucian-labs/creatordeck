@@ -59,7 +59,7 @@ export function ProcessList({ processes }: ProcessListProps) {
           return (
             <div
               key={`${p.id}-${p.name}`}
-              className="border-b border-border/30 px-4 py-3.5 hover:bg-surface-hover transition-colors"
+              className="border-b border-border/30 px-5 py-4 hover:bg-surface-hover transition-colors"
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">

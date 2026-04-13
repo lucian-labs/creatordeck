@@ -25,13 +25,13 @@ function App() {
 
       <main className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-px bg-border overflow-auto">
         {/* Left: What is using what */}
-        <section className="lg:col-span-2 bg-surface p-6 space-y-6">
+        <section className="lg:col-span-2 bg-surface p-8 space-y-8">
           <ProcessList processes={mediaProcesses} />
           <Timeline />
         </section>
 
         {/* Right: Devices & health */}
-        <aside className="bg-surface p-6 space-y-6">
+        <aside className="bg-surface p-8 space-y-8">
           <Dashboard
             cameras={cameras}
             audioEndpoints={audioEndpoints}

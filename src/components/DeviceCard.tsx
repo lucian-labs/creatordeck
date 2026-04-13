@@ -21,7 +21,7 @@ export function DeviceCard({ device, category }: DeviceCardProps) {
 
   return (
     <div
-      className={`border-b border-border/50 px-4 py-3.5 transition-all ${
+      className={`border-b border-border/50 px-5 py-4 transition-all ${
         isGhost
           ? "opacity-40"
           : isBad

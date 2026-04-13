@@ -47,7 +47,7 @@ function UsbDeviceRow({ device, onReset }: { device: DeviceInfo; onReset: () => 
   }
 
   return (
-    <div className={`border-b border-border/30 px-4 py-2.5 text-xs ${isBad ? "bg-red-950/10" : ""}`}>
+    <div className={`border-b border-border/30 px-5 py-3.5 text-xs ${isBad ? "bg-red-950/10" : ""}`}>
       <div className="flex items-center justify-between gap-2">
         <span className="truncate flex-1">{device.FriendlyName || "Unknown"}</span>
         <div className="flex items-center gap-1.5 shrink-0">

@@ -86,7 +86,7 @@ export function Timeline() {
             return (
               <div
                 key={`${event.timestamp}-${i}`}
-                className="flex items-start gap-3 border-b border-border/30 px-4 py-3"
+                className="flex items-start gap-3 border-b border-border/30 px-5 py-4"
               >
                 <Icon className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${config.color}`} />
                 <div className="min-w-0 flex-1">
